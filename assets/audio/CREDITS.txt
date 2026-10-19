@@ -1,0 +1,38 @@
+SUJALAGA — arcade soundtrack and sound effects
+
+All recordings below were released by their creators under Creative Commons
+Zero (CC0 1.0 Universal): https://creativecommons.org/publicdomain/zero/1.0/
+Retrieved October 19, 2026. Source recordings converted to MP3 for the game.
+Music: stereo 44.1 kHz / 128 kbps. Effects: mono 32 kHz / 80 kbps.
+No AI music service was used.
+
+Sectors 1–3: Level 1, Level 2, Level 3 — Juhani Junkala / SubspaceAudio
+Collection: 5 Chiptunes (Action) / Retro Game Music Pack
+https://opengameart.org/content/5-chiptunes-action
+https://opengameart.org/sites/default/files/5%20Action%20Chiptunes%20By%20Juhani%20Junkala.zip
+The archive's INFO.txt explicitly releases these tracks under CC0.
+
+Sector 4: 8-bit Epic Space Shooter Music — HydroGene
+https://opengameart.org/content/8-bit-epic-space-shooter-music
+https://opengameart.org/sites/default/files/8bit-spaceshooter.mp3
+
+Boss encounters: Space Boss Battle (175 BPM) — MintoDog
+https://opengameart.org/content/space-boss-battle
+https://opengameart.org/sites/default/files/space_boss_battle_bpm175.mp3
+
+Sci-fi Sounds (1.0) — Kenney
+https://kenney.nl/assets/sci-fi-sounds
+https://kenney.nl/media/pages/assets/sci-fi-sounds/6b296f9ecf-1677589334/kenney_sci-fi-sounds.zip
+The archive's License.txt explicitly releases the sounds under CC0.
+Included sound mappings:
+  laser-green.mp3  — laserSmall_000.ogg
+  laser-citrus.mp3 — laserRetro_001.ogg
+  laser-carrot.mp3 — laserSmall_003.ogg
+  laser-berry.mp3  — laserRetro_004.ogg
+  impact.mp3      — explosionCrunch_000.ogg
+  surge.mp3       — lowFrequency_explosion_000.ogg
+  shield.mp3      — forceField_002.ogg
+  boss-shot.mp3   — laserLarge_002.ogg
+  fill.mp3        — slime_000.ogg
+
+Additional interface chimes and layered impact sounds synthesized in game.
