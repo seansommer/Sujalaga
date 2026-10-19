@@ -6,6 +6,8 @@ import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
 import {OutputPass} from 'three/addons/postprocessing/OutputPass.js';
 import {JUICES,clamp} from './simulation.js';
+import{BOSS_WEAPONS}from'./weapons.js';
+import{flightView,frameCamera,steeringInset}from'./flight-view.js';
 const TAU=Math.PI*2;
 const basic=(color,intensity=1)=>new THREE.MeshBasicMaterial({color:new THREE.Color(color).multiplyScalar(intensity)});
 const pbr=(color,metalness=0,roughness=.3)=>new THREE.MeshPhysicalMaterial({color,metalness,roughness,clearcoat:1,clearcoatRoughness:.15});
@@ -102,7 +104,7 @@ export class ArcadeScene{
  }
  makeBackground(){
   const shader=new THREE.ShaderMaterial({depthWrite:false,uniforms:{time:{value:0},accent:{value:new THREE.Color(0x135446)}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`varying vec2 vUv;uniform float time;uniform vec3 accent;float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+1.),f.x),f.y);}void main(){vec2 p=vUv*5.;float n=noise(p+time*.006)*.5+noise(p*2.7)*.3+noise(p*7.1)*.2;float band=exp(-pow((vUv.x-vUv.y*.4-.28)*3.,2.));vec3 col=mix(vec3(.002,.009,.022),accent,n*n*band*.58);col+=vec3(.09,.015,.17)*pow(noise(p*1.5+2.),3.)*.7;gl_FragColor=vec4(col,1.);}`});
-  this.nebula=mesh(new THREE.PlaneGeometry(150,110),shader,0,5,-55);this.scene.add(this.nebula);
+  this.nebula=mesh(new THREE.PlaneGeometry(150,150),shader,0,-5,-55);this.scene.add(this.nebula);
   const n=1200,positions=new Float32Array(n*3),colors=new Float32Array(n*3);for(let i=0;i<n;i++){positions[i*3]=(Math.random()-.5)*90;positions[i*3+1]=(Math.random()-.5)*80;positions[i*3+2]=-5-Math.random()*55;const c=new THREE.Color(i%5===0?0x9b70ce:0xbce7db);colors.set([c.r,c.g,c.b],i*3);}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(positions,3));geo.setAttribute('color',new THREE.BufferAttribute(colors,3));this.stars=new THREE.Points(geo,new THREE.PointsMaterial({map:this.sparkTex,size:.17,sizeAttenuation:true,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));this.scene.add(this.stars);
   const planetMat=new THREE.ShaderMaterial({uniforms:{accent:{value:new THREE.Color(0x347551)}},vertexShader:'varying vec3 vN;varying vec3 vP;void main(){vN=normal;vP=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:`varying vec3 vN;varying vec3 vP;uniform vec3 accent;void main(){float land=sin(vP.x*1.7+sin(vP.y*2.1))*sin(vP.z*1.9+cos(vP.x*2.4));float light=max(0.,dot(normalize(vN),normalize(vec3(-.8,.7,1.))));float rim=pow(1.-max(0.,vN.z),2.5);vec3 c=mix(vec3(.006,.04,.055),accent*.5,smoothstep(-.05,.25,land));c*=light*.8+.08;c+=vec3(.15,.65,.49)*rim*.42;gl_FragColor=vec4(c,1.);}`});
@@ -110,8 +112,8 @@ export class ArcadeScene{
   this.station=new THREE.Group();const m=this.materials;
   // A recessed flight deck and repeating mechanical ribs create real depth behind play.
   for(const side of [-1,1]){
-   this.station.add(box(.55,36,.75,m.dark,side*10,0,-2),box(.12,34,.15,basic(0x73edb6,1.3),side*9.62,0,-1.56));
-   for(let i=0;i<9;i++){const y=-16+i*4;this.station.add(box(1.8,.22,1.5,m.chrome,side*10.7,y,-2.3));const brace=box(.19,2.9,.28,m.dark,side*11.3,y+1.1,-1.8);brace.rotation.z=side*.37;this.station.add(brace);this.station.add(box(.08,1.2,.08,m.purple,side*10.7,y+.5,-1.4));}
+   this.station.add(box(.55,58,.75,m.dark,side*10,-11,-2),box(.12,56,.15,basic(0x73edb6,1.3),side*9.62,-11,-1.56));
+   for(let i=0;i<15;i++){const y=-40+i*4;this.station.add(box(1.8,.22,1.5,m.chrome,side*10.7,y,-2.3));const brace=box(.19,2.9,.28,m.dark,side*11.3,y+1.1,-1.8);brace.rotation.z=side*.37;this.station.add(brace);this.station.add(box(.08,1.2,.08,m.purple,side*10.7,y+.5,-1.4));}
   }
   const deck=box(23,5,.3,pbr(0x0b272d,.8,.36),0,-14,-2);this.station.add(deck);
   for(let x=-10;x<=10;x+=2.5)this.station.add(box(.03,5,.04,basic(0x2d7a65),x,-14,-1.8));
@@ -122,9 +124,12 @@ export class ArcadeScene{
  makePools(){
   this.dummy=new THREE.Object3D();
   this.laserGeometries=[new THREE.CapsuleGeometry(.075,.52,4,6),new THREE.CapsuleGeometry(.09,.78,4,6),new THREE.CylinderGeometry(.045,.13,.78,6),new THREE.OctahedronGeometry(.19)];this.shots=new THREE.InstancedMesh(this.laserGeometries[0],basic(0xc7ff78,2.6),160);this.shots.instanceMatrix.setUsage(THREE.DynamicDrawUsage);this.shots.frustumCulled=false;this.scene.add(this.shots);
-  this.threats=new THREE.InstancedMesh(new THREE.SphereGeometry(.22,10,8),basic(0xff6579,2),160);this.threats.instanceMatrix.setUsage(THREE.DynamicDrawUsage);this.threats.frustumCulled=false;this.scene.add(this.threats);
+  const pool=(geometry,color,intensity=1.7)=>{const p=new THREE.InstancedMesh(geometry,basic(color,intensity),160);p.instanceMatrix.setUsage(THREE.DynamicDrawUsage);p.frustumCulled=false;p.count=0;this.scene.add(p);return p;};
+  const geometry=[new THREE.SphereGeometry(.27,10,8),new THREE.TorusGeometry(.25,.075,6,16,Math.PI*1.7),new THREE.ConeGeometry(.19,1.16,6),new THREE.OctahedronGeometry(.28)];
+  this.threatPools={pellet:pool(new THREE.SphereGeometry(.19,8,6),0xff6579)};this.trailPools={};
+  BOSS_WEAPONS.forEach((w,i)=>{this.threatPools[w.key]=pool(geometry[i],w.color);if(i>=2){const tail=new THREE.ConeGeometry(i===2?.1:.14,i===2?.8:1.5,5);tail.rotateZ(Math.PI);tail.translate(0,i===2?-.85:-.9,0);this.trailPools[w.key]=pool(tail,w.color,.85);this.trailPools[w.key].material.transparent=true;this.trailPools[w.key].material.opacity=.48;this.trailPools[w.key].material.depthWrite=false;}});
   this.warningLanes=[];const warningMat=new THREE.MeshBasicMaterial({color:0xff8a69,transparent:true,opacity:.13,depthWrite:false,side:THREE.DoubleSide});
-  for(const x of [-6,-2,2,6]){const g=new THREE.Group();g.position.set(x,0,.04);g.add(mesh(new THREE.PlaneGeometry(1.65,22),warningMat));for(const side of [-1,1])g.add(mesh(new THREE.PlaneGeometry(.035,22),basic(0xff8b66,1.3),side*.83,0,.02));g.visible=false;this.scene.add(g);this.warningLanes.push(g);}this.warningMaterial=warningMat;
+  for(const x of [-6,-2,2,6]){const g=new THREE.Group();g.position.set(x,-7,.04);g.add(mesh(new THREE.PlaneGeometry(1.65,36),warningMat));for(const side of [-1,1])g.add(mesh(new THREE.PlaneGeometry(.035,36),basic(0xff8b66,1.3),side*.83,0,.02));g.visible=false;this.scene.add(g);this.warningLanes.push(g);}this.warningMaterial=warningMat;
   this.sparkPositions=new Float32Array(2400*3);this.sparkColors=new Float32Array(2400*3);const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(this.sparkPositions,3));geo.setAttribute('color',new THREE.BufferAttribute(this.sparkColors,3));this.sparks=new THREE.Points(geo,new THREE.PointsMaterial({size:.23,map:this.sparkTex,transparent:true,vertexColors:true,depthWrite:false,blending:THREE.AdditiveBlending}));this.sparks.frustumCulled=false;this.scene.add(this.sparks);
  }
  burst(x,y,color,count=25,speed=4){
@@ -138,7 +143,7 @@ export class ArcadeScene{
    this.burst(e.x,e.y,JUICES[Math.max(0,this.sector)].color,e.boss?140:32,e.boss?10:4);if(e.boss&&!this.reduced)this.shake=.24;
   }
   if(e.type==='hit')this.burst(e.x,e.y,JUICES[Math.max(0,this.sector)].color,e.boss?4:3,1.6);
-  if(e.type==='bossFire')this.burst(e.x,e.y,0xff807e,15,3);
+  if(e.type==='bossFire')this.burst(e.x,e.y,BOSS_WEAPONS[e.sector].color,15,3);
   if(e.type==='surge'){this.pulse=1;this.surgeRing.position.set(e.x,e.y,.8);this.burst(e.x,e.y,0xbaff8d,120,13);}
   if(e.type==='hurt'||e.type==='shieldBreak'){this.shake=this.reduced?0:.3;this.burst(e.x,e.y,e.type==='hurt'?0xff6c70:0x9bcfff,75,7);}
   if(e.type==='power')this.burst(e.x,e.y,0xb180ff,45,4);
@@ -148,9 +153,9 @@ export class ArcadeScene{
   const r=this.canvas.getBoundingClientRect();this.width=Math.max(1,r.width);this.height=Math.max(1,r.height);
   const mobile=this.width<700,ratio=this.quality==='performance'?1:Math.min(devicePixelRatio||1,this.quality==='ultra'?2:mobile?1.4:1.7);
   this.renderer.setPixelRatio(ratio);this.renderer.setSize(this.width,this.height,false);this.composer.setPixelRatio(ratio);this.composer.setSize(this.width,this.height);
-  this.camera.aspect=this.width/this.height;const t=Math.tan(THREE.MathUtils.degToRad(this.camera.fov/2));this.distance=Math.max(14/t,9.6/(t*this.camera.aspect));this.camera.position.set(0,-2.2,this.distance);this.camera.lookAt(0,.5,0);this.camera.updateProjectionMatrix();
+  this.inset=steeringInset();this.distance=frameCamera(this.camera,this.width,this.height,this.inset).distance;
  }
- controlScale(){return Math.min(this.width/19.2,this.height/28);}
+ controlScale(){return flightView(this.width,this.height,this.inset).scale;}
  pointerX(clientX,clientY){const r=this.canvas.getBoundingClientRect();this.pointer.set((clientX-r.left)/r.width*2-1,-(clientY-r.top)/r.height*2+1);this.ray.setFromCamera(this.pointer,this.camera);this.ray.ray.intersectPlane(this.plane,this.hit);return this.hit.x;}
  render(sim,dt,{menu=false}={}){
   if(this.disposed)return;const live=sim.paused?0:dt;this.elapsed+=live;
@@ -175,16 +180,16 @@ export class ArcadeScene{
   }
   for(const exit of this.exits){exit.age+=live;exit.model.getObjectByName('cap').position.y=1.12+Math.max(0,.68-exit.age*3.4);exit.model.position.y+=live*(exit.age<.22?.4:5+exit.age*11);exit.model.position.z-=live*5;exit.model.rotation.z+=live*1.4;exit.model.scale.multiplyScalar(Math.exp(-live*.3));if(exit.age>1.3)this.scene.remove(exit.model);}
   this.exits=this.exits.filter(e=>e.age<=1.3);
-  const drawPool=(pool,items,scale=1)=>{pool.count=Math.min(pool.instanceMatrix.count,items.length);for(let i=0;i<pool.count;i++){const b=items[i];this.dummy.position.set(b.x,b.y,.75);this.dummy.rotation.set(0,0,-Math.atan2(b.vx,b.vy));this.dummy.scale.setScalar(scale);this.dummy.updateMatrix();pool.setMatrixAt(i,this.dummy.matrix);}pool.instanceMatrix.needsUpdate=true;};
+  const drawPool=(pool,items,scale=1,spin=0)=>{pool.count=Math.min(pool.instanceMatrix.count,items.length);for(let i=0;i<pool.count;i++){const b=items[i];this.dummy.position.set(b.x,b.y,.75);this.dummy.rotation.set(0,0,-Math.atan2(b.vx,b.vy)+(this.reduced?0:spin*(this.elapsed+b.id)));this.dummy.scale.setScalar(scale);this.dummy.updateMatrix();pool.setMatrixAt(i,this.dummy.matrix);}pool.instanceMatrix.needsUpdate=true;};
   for(const lane of this.warningLanes)lane.visible=!!sim.warning?.lanes.includes(lane.position.x);this.warningMaterial.opacity=this.reduced?.16:.08+(1-(sim.warning?.remaining||0)/.7)*.15;
-  drawPool(this.shots,sim.bullets);drawPool(this.threats,sim.hazards,1+Math.sin(this.elapsed*12)*.08);
+  drawPool(this.shots,sim.bullets);for(const [key,pool]of Object.entries(this.threatPools)){const items=sim.hazards.filter(h=>(h.weapon||'pellet')===key);drawPool(pool,items,1,key==='disc'?7:key==='comet'?2:0);if(this.trailPools[key])drawPool(this.trailPools[key],items);}
   const pickIds=new Set(sim.pickups.map(p=>p.id));for(const [id,g]of this.pickups)if(!pickIds.has(id)){this.scene.remove(g);this.pickups.delete(id);}
   for(const p of sim.pickups){let g=this.pickups.get(p.id);if(!g){g=new THREE.Group();const m=this.powerMats[p.kind];g.add(mesh(this.powerGeo,m),mesh(this.powerRingGeo,this.materials.white));const icon=new THREE.Sprite(this.powerIcons[p.kind]);icon.name='power-icon';icon.scale.set(.66,.66,1);icon.position.z=.52;g.add(icon);this.pickups.set(p.id,g);this.scene.add(g);}g.position.set(p.x,p.y,.6);g.children[0].rotation.set(this.elapsed*.6,this.elapsed*1.8,this.elapsed*.3);g.children[1].rotation.set(.4,Math.sin(this.elapsed)*.3,this.elapsed*.7);}
   for(const p of this.effects){p.life-=live;p.x+=p.vx*live;p.y+=p.vy*live;p.z+=p.vz*live;p.vy-=live*.8;}
   this.effects=this.effects.filter(p=>p.life>0);for(let i=0;i<this.effects.length;i++){const p=this.effects[i];this.sparkPositions.set([p.x,p.y,p.z],i*3);const a=Math.min(1,p.life*2);this.sparkColors.set([p.color.r*a*2,p.color.g*a*2,p.color.b*a*2],i*3);}
   this.sparks.geometry.setDrawRange(0,this.effects.length);this.sparks.geometry.attributes.position.needsUpdate=true;this.sparks.geometry.attributes.color.needsUpdate=true;
   this.pulse=Math.max(0,this.pulse-live*1.1);this.surgeRing.visible=this.pulse>0;this.surgeRing.scale.setScalar(1+(1-this.pulse)*28);
-  this.shake=Math.max(0,this.shake-live);const shake=this.shake*(this.reduced?0:1);const intro=sim.state==='countdown'&&!menu?sim.countdown/3.2:0;
+  this.shake=Math.max(0,this.shake-live);const shake=this.shake*(this.reduced?0:1);const intro=sim.state==='countdown'&&!menu?sim.countdown/3:0;
   this.camera.position.set(Math.sin(this.elapsed*70)*shake+(!this.reduced?Math.sin(intro*Math.PI)*2.5:0),-2.2+Math.cos(this.elapsed*61)*shake,this.distance+(!this.reduced?intro*3:0));this.camera.lookAt(0,.5,0);
   if(this.quality==='performance')this.renderer.render(this.scene,this.camera);else this.composer.render();
  }

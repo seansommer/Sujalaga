@@ -1,6 +1,7 @@
+import{BOSS_WEAPONS}from'./weapons.js';
 // Seeded routes keep each patrol fresh while leaving every attack readable.
 export const BOSS_NAMES=['THE GREEN GUARDIAN','CITRUS CYCLONE','CARROT CRUSHER','BERRY ECLIPSE'];
-export const BOSS_HINTS=['Watch the sweeping fans.','Slip between the spinning spokes.','Leave the glowing lanes before the volley.','Thread the petals. Keep moving.'];
+export const BOSS_HINTS=['Dodge the sweeping plasma orbs.','Slip between the spinning citrus discs.','Leave the glowing lanes before the rockets.','Thread the curved berry comets.'];
 export const FORMATIONS=['chevron','diamond','wings','orbit','staircase','lattice'];
 export function formationPoints(name,count){
  return Array.from({length:count},(_,i)=>{
@@ -40,6 +41,6 @@ export function bossVolley(sector,beat,phase,x,y,aim){
   for(let i=0;i<n;i++){const a=(i-(n-1)/2)*.26+(beat%2?.13:0);add(a,4.5,{curve:(beat%2?1:-1)*.32});}
   if(beat%3===2){add(aim-.17,6.8);add(aim+.17,6.8);}
  }
- return{kind,lanes,shots};
+ const weapon=BOSS_WEAPONS[sector];return{kind,lanes,shots:shots.map(shot=>({...shot,weapon:weapon.key,r:weapon.r,halfLength:weapon.halfLength||0,acceleration:weapon.acceleration||0}))};
 }
 export function bossInterval(sector,phase){return [1.8,1.5,2.05,1.65][sector]-(phase===2?.23:0);}

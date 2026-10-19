@@ -1,11 +1,12 @@
 export const MUSIC={
+ menu:{file:'menu.mp3',title:'Title Screen',artist:'Juhani Junkala'},
  'sector-1':{file:'sector-1.mp3',title:'Level 1',artist:'Juhani Junkala'},
  'sector-2':{file:'sector-2.mp3',title:'Level 2',artist:'Juhani Junkala'},
  'sector-3':{file:'sector-3.mp3',title:'Level 3',artist:'Juhani Junkala'},
  'sector-4':{file:'sector-4.mp3',title:'8-bit Epic Space Shooter',artist:'HydroGene'},
  boss:{file:'boss.mp3',title:'Space Boss Battle',artist:'MintoDog'}
 };
-export function musicFor(sim,menu=false){return !menu&&sim?.boss?'boss':`sector-${(menu?0:sim?.sector||0)+1}`;}
+export function musicFor(sim,menu=false){return menu?'menu':sim?.boss?'boss':`sector-${(sim?.sector||0)+1}`;}
 // A late network response must never start a previous stage's music or unpause audio.
 export class MusicDeck{
  constructor(ctx,output,load,onStatus=()=>{}){this.ctx=ctx;this.output=output;this.load=load;this.onStatus=onStatus;this.desired=null;this.current=null;this.generation=0;this.offsets=new Map();this.failed=false;this.rate=1;}

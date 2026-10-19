@@ -3,9 +3,11 @@ SUJALAGA — arcade soundtrack and sound effects
 All recordings below were released by their creators under Creative Commons
 Zero (CC0 1.0 Universal): https://creativecommons.org/publicdomain/zero/1.0/
 Retrieved October 19, 2026. Source recordings converted to MP3 for the game.
-Music: stereo 44.1 kHz / 128 kbps. Effects: mono 32 kHz / 80 kbps.
+Music: stereo 44.1 kHz / 128 kbps. Effects and voices: mono 32 kHz / 80 kbps.
+Voice clips trimmed and loudness-normalized to -17 LUFS.
 No AI music service was used.
 
+Home screen: Title Screen
 Sectors 1–3: Level 1, Level 2, Level 3 — Juhani Junkala / SubspaceAudio
 Collection: 5 Chiptunes (Action) / Retro Game Music Pack
 https://opengameart.org/content/5-chiptunes-action
@@ -36,3 +38,33 @@ Included sound mappings:
   fill.mp3        — slime_000.ogg
 
 Additional interface chimes and layered impact sounds synthesized in game.
+
+Boss weapon sound mappings (Kenney Sci-fi Sounds, CC0):
+  boss-plasma.mp3 — laserLarge_000.ogg
+  boss-disc.mp3   — forceField_000.ogg
+  boss-rocket.mp3 — laserLarge_004.ogg
+  boss-comet.mp3  — laserRetro_003.ogg
+
+Voiceover Pack — Kenney (CC0)
+https://kenney.nl/assets/voiceover-pack
+https://opengameart.org/content/voiceover-pack-40-lines
+https://opengameart.org/sites/default/files/Voiceover%20Pack.zip
+Included male recordings:
+  voice-congratulations.mp3     — Male/congratulations.ogg
+  voice-objective-achieved.mp3  — Male/objective_achieved.ogg
+  voice-go.mp3                  — Male/go.ogg
+  voice-go-go-go.mp3            — Male/war_go_go_go.ogg
+  voice-look-out.mp3            — Male/war_look_out.ogg
+  voice-get-down.mp3            — Male/war_get_down.ogg
+  voice-mission-completed.mp3   — Male/mission_completed.ogg
+  voice-game-over.mp3           — Male/game_over.ogg
+  voice-you-win.mp3             — Male/you_win.ogg
+
+Voiceover Pack: Fighter — Kenney (CC0)
+https://opengameart.org/content/voiceover-pack-fighter-40-taunts
+https://opengameart.org/sites/default/files/kenney_voiceoverFighter.zip
+  voice-combo.mp3               — Audio/combo.ogg
+Both voice pack archives include CC0 License.txt files.
+
+The three countdown beeps and higher launch tone are original synthesis;
+no Mario Kart recording is included.

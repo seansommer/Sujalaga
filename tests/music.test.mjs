@@ -1,7 +1,7 @@
 import test from'node:test';import assert from'node:assert/strict';import{MusicDeck,musicFor}from'../src/music.js';
 import{Soundtrack}from'../src/audio.js';
 function harness(){const started=[],stopped=[],param=()=>({setValueAtTime(){},linearRampToValueAtTime(){},cancelScheduledValues(){},setTargetAtTime(){}}),ctx={currentTime:0,createGain:()=>({gain:param(),connect(){},disconnect(){}}),createBufferSource:()=>({playbackRate:param(),connect(){},disconnect(){},start(t,offset){started.push({buffer:this.buffer,offset});},stop(){stopped.push(this.buffer);}})};return{ctx,started,stopped};}
-test('music follows all juice sectors, menu, and boss encounters',()=>{for(let sector=0;sector<4;sector++){assert.equal(musicFor({sector,boss:false}),`sector-${sector+1}`);assert.equal(musicFor({sector,boss:true}),'boss');}assert.equal(musicFor({sector:3,boss:true},true),'sector-1');});
+test('music follows all juice sectors, menu, and boss encounters',()=>{for(let sector=0;sector<4;sector++){assert.equal(musicFor({sector,boss:false}),`sector-${sector+1}`);assert.equal(musicFor({sector,boss:true}),'boss');}assert.equal(musicFor({sector:3,boss:true},true),'menu');});
 test('a paused or superseded download cannot start stale music',async()=>{
  const {ctx,started}=harness(),pending=new Map(),deck=new MusicDeck(ctx,{},key=>new Promise(resolve=>pending.set(key,resolve)));
  const first=deck.select('sector-1');await deck.select(null);pending.get('sector-1')({duration:70});await first;assert.equal(started.length,0);

@@ -1,17 +1,18 @@
 import{FORMATIONS,formationPoints,bossPose,bossVolley,bossInterval}from'./choreography.js';
+import{moveHazard,hazardSweep}from'./weapons.js';
 export const JUICES=[
  {name:'Mighty Dozen',color:0x9be63e,hex:'#b8f25d',label:'GREEN SQUADRON'},
  {name:'Citrus Immunity',color:0xffc238,hex:'#ffd370',label:'CITRUS CIRCUIT'},
  {name:'Carrot Power',color:0xff7733,hex:'#ff9d65',label:'SOLAR ORCHARD'},
  {name:'Berry Brigade',color:0xd54fff,hex:'#df9aff',label:'BERRY NEBULA'}
 ];
-export const FIELD={left:-7.8,right:7.8,bottom:-10.4,top:13,playerY:-8.5,playerMinY:-9.5,playerMaxY:-5.8};
+export const FIELD={left:-7.8,right:7.8,bottom:-10.4,top:13,playerY:-8.5,playerMinY:-10.4,playerMaxY:-4.4};
 export const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export function random(seed){let n=seed>>>0;return()=>{n+=0x6D2B79F5;let t=n;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
 export function segmentDistance(x,y,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,t=clamp(((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy||1),0,1);return Math.hypot(x-ax-t*dx,y-ay-t*dy);}
 export class Patrol{
  constructor({seed=1,mode='arcade',onEvent=()=>{}}={}){
-  this.seed=seed>>>0;this.rng=random(this.seed);this.mode=mode;this.onEvent=onEvent;this.state='countdown';this.paused=false;this.countdown=3.2;this.time=0;this.clock=0;this.wave=1;this.sectors=0;this.score=0;this.filled=0;this.combo=0;this.maxCombo=0;this.shots=0;this.hits=0;this.surges=0;this.energy=0;this.lives=3;this.invulnerable=3;this.shield=0;this.power={twin:0,rapid:0,spread:0};this.player={x:0,y:FIELD.playerY};this.target=0;this.targetY=FIELD.playerY;this.formationIndex=-1;this.bullets=[];this.hazards=[];this.pickups=[];this.enemies=[];this.id=1;this.fireTimer=0;this.diveTimer=4;this.shotTimer=3;this.nextWave=0;this.sectorStart=0;this.waveTime=0;this.createWave();
+  this.seed=seed>>>0;this.rng=random(this.seed);this.mode=mode;this.onEvent=onEvent;this.state='countdown';this.paused=false;this.countdown=3;this.time=0;this.clock=0;this.wave=1;this.sectors=0;this.score=0;this.filled=0;this.combo=0;this.maxCombo=0;this.shots=0;this.hits=0;this.surges=0;this.energy=0;this.lives=3;this.invulnerable=3;this.shield=0;this.power={twin:0,rapid:0,spread:0};this.player={x:0,y:FIELD.playerY};this.target=0;this.targetY=FIELD.playerY;this.formationIndex=-1;this.bullets=[];this.hazards=[];this.pickups=[];this.enemies=[];this.id=1;this.fireTimer=0;this.diveTimer=4;this.shotTimer=3;this.nextWave=0;this.sectorStart=0;this.waveTime=0;this.createWave();
  }
  get sector(){return Math.floor((this.wave-1)/4)%4;}
  get juice(){return JUICES[this.sector];}
@@ -62,7 +63,7 @@ export class Patrol{
   if(!this.active||this.invulnerable>0)return false;
   this.invulnerable=2.2;this.combo=0;
   if(this.shield){this.shield=0;this.emit('shieldBreak',{x:this.player.x,y:this.player.y});return true;}
-  this.lives--;this.emit('hurt',{x:this.player.x,y:this.player.y});
+  this.lives--;this.emit('hurt',{x:this.player.x,y:this.player.y,lives:this.lives,mode:this.mode});
   if(this.mode==='practice')this.lives=3;
   else if(this.lives<=0)this.end(false);
   return true;
@@ -92,11 +93,11 @@ export class Patrol{
    }else if(e.boss){e.phase=e.fill>=.5?2:1;e.motionAge+=dt*(e.phase===2?1.15:1);const pose=bossPose(this.sector,e.motionAge);Object.assign(e,pose);}
    else if(e.state==='formation'){e.x=e.sx+Math.sin(this.waveTime*.82)*.48;e.y=e.sy+Math.sin(this.waveTime*.9+e.sx*.3)*.18;e.angle=Math.sin(this.waveTime*1.5+e.sx)*.07;}
    else if(e.state==='dive'){
-    e.diveAge+=dt;const t=e.diveAge/(4.2/speed);
+    e.diveAge+=dt*(e.y<-13?1.65:1);const t=e.diveAge/(4.2/speed);
     const route=e.diveType||0;
     const bend=route===0?Math.sin(t*Math.PI*2)*2.2:route===1?Math.sin(t*Math.PI)*4:route===2?Math.sin(t*Math.PI*4)*1.35:Math.sin(t*Math.PI*2)*Math.cos(t*Math.PI)*3.5;
     e.x=clamp(e.startX+(e.aim-e.startX)*Math.min(1,t*1.1)+bend*e.side,-8.3,8.3);e.y=e.startY-(e.startY+13)*t;e.z=Math.sin(t*Math.PI)*1.1;e.angle=-Math.sin(t*Math.PI*(route===2?4:2))*.65;
-    if(e.y<-12.5){e.state='entry';e.age=0;e.delay=0;}
+    if(e.y<-30){e.state='entry';e.age=0;e.delay=0;}
    }
   }
   this.diveTimer-=dt;
@@ -112,14 +113,14 @@ export class Patrol{
   if(this.shotTimer<=0){
    if(boss){
     const volley=this.warning||bossVolley(this.sector,this.attackBeat,boss.phase,boss.x,boss.y,Math.atan2(this.player.x-boss.x,boss.y-this.player.y));
-    for(const shot of volley.shots){const translated=this.warning&&!['lanes','crossfire'].includes(volley.kind)?{x:shot.x+boss.x-this.warning.x,y:shot.y+boss.y-this.warning.y}:{};this.hazards.push({id:this.id++,r:.22,life:7,...shot,...translated});}
+    for(const shot of volley.shots){const translated=this.warning&&!['lanes','crossfire'].includes(volley.kind)?{x:shot.x+boss.x-this.warning.x,y:shot.y+boss.y-this.warning.y}:{};this.hazards.push({id:this.id++,r:.22,life:9,...shot,...translated});}
     this.emit('bossFire',{x:boss.x,y:boss.y,sector:this.sector,kind:volley.kind});this.warning=null;this.attackBeat++;this.shotTimer=bossInterval(this.sector,boss.phase);
    }else{
     const candidates=this.enemies.filter(e=>!e.boss&&e.state!=='entry'&&e.y>this.player.y+4);
     const count=this.sector>1?2:1;
     for(let i=0;i<count&&candidates.length;i++){
      const e=candidates.splice(Math.floor(this.rng()*candidates.length),1)[0],aim=Math.atan2(this.player.x-e.x,e.y-this.player.y),spread=this.sector===3&&this.attackBeat%3===2?[-.15,.15]:[0];
-     for(const a of spread){const v=4.8*Math.min(1.45,speed);this.hazards.push({id:this.id++,x:e.x,y:e.y-1,vx:Math.sin(aim+a)*v,vy:-Math.cos(aim+a)*v,r:.19,life:7});}
+     for(const a of spread){const v=4.8*Math.min(1.45,speed);this.hazards.push({id:this.id++,x:e.x,y:e.y-1,vx:Math.sin(aim+a)*v,vy:-Math.cos(aim+a)*v,r:.19,life:9});}
     }
     this.attackBeat++;this.shotTimer=Math.max(1.05,2.4-this.wave*.065);
    }
@@ -130,11 +131,11 @@ export class Patrol{
    for(const e of this.enemies){if(e.y>14||e.age<e.delay||e.hp<=0)continue;if(segmentDistance(e.x,e.y,ax,ay,b.x,b.y)<e.r+.14){b.life=0;this.hits++;this.fill(e);break;}}
   }
   this.bullets=this.bullets.filter(b=>b.life>0&&b.y<15&&Math.abs(b.x)<12);
-  for(const h of this.hazards){const ax=h.x,ay=h.y;if(h.curve){const a=h.curve*dt,c=Math.cos(a),s=Math.sin(a),vx=h.vx;h.vx=vx*c-h.vy*s;h.vy=vx*s+h.vy*c;}h.x+=h.vx*dt;h.y+=h.vy*dt;h.life-=dt;if(segmentDistance(this.player.x,this.player.y,ax,ay,h.x,h.y)<.43+h.r){h.life=0;this.hurt();if(this.state==='lost')return;}}
-  this.hazards=this.hazards.filter(h=>h.life>0&&h.y>-12.8&&Math.abs(h.x)<12);
+  for(const h of this.hazards){const ax=h.x,ay=h.y;moveHazard(h,dt);if(segmentDistance(this.player.x,this.player.y,...hazardSweep(h,ax,ay))<.43+h.r){h.life=0;this.hurt();if(this.state==='lost')return;}}
+  this.hazards=this.hazards.filter(h=>h.life>0&&h.y>-32&&Math.abs(h.x)<12);
   for(const e of this.enemies)if(e.state==='dive'&&Math.hypot(e.x-this.player.x,e.y-this.player.y)<e.r+.48){this.hurt();e.state='entry';e.age=0;e.delay=0;if(this.state==='lost')return;}
-  for(const p of this.pickups){p.age+=dt;p.y-=3.4*dt;p.x+=Math.sin(p.age*2)*dt*.3;if(Math.hypot(p.x-this.player.x,p.y-this.player.y)<1.15){this.collect(p);p.y=-20;}}
-  this.pickups=this.pickups.filter(p=>p.y>-12);
+  for(const p of this.pickups){p.age+=dt;p.y-=3.4*dt;p.x+=Math.sin(p.age*2)*dt*.3;if(Math.hypot(p.x-this.player.x,p.y-this.player.y)<1.15){this.collect(p);p.y=-100;}}
+  this.pickups=this.pickups.filter(p=>p.y>-32);
   if(!this.enemies.length){
    const bonus=Math.max(100,Math.round(650-this.waveTime*8))*(this.boss?3:1);this.score+=bonus;if(this.boss){this.sectors++;this.lives=Math.min(3,this.lives+1);}
    this.state='cleared';this.warning=null;this.nextWave=this.boss?3.2:2.2;this.hazards=[];this.bullets=[];this.emit('clear',{boss:this.boss,bonus,wave:this.wave});
