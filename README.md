@@ -6,6 +6,8 @@ A SUJA arcade flight game with four 3D juice sectors, varied diving bottle forma
 
 [Play in SUJA Game Center](https://seansommer.github.io/sujagamecenter/sujalaga.html)
 
+![Sujalaga's animated arcade title screen](art/arcade-home-preview.jpg)
+
 The home screen is a full-screen arcade title sequence: an original 10-second looping movie, glowing mode cursor, Press Start prompt, and your local best score. Select Arcade, Endless, or Practice with a tap or the arrow keys, then press Enter to launch. A portrait crop fills phone screens; a widescreen composition keeps the ships and title visible beside the menu. The movie is silent, stops during gameplay or backgrounding, and has its own pause button. Reduced-motion mode shows a still poster unless you choose to play it. The source movie and media export instructions live in [art](art/README.md).
 
 Original artwork and procedural 3D models accompany a CC0 arcade soundtrack with a dedicated title-screen theme, separate sector and boss music, sampled effects, prerecorded arcade voice rewards, and a three-beep race countdown with a higher launch tone. See [audio credits](assets/audio/CREDITS.txt). Lasers match each juice sector, and the right-side Juice Surge meter fills upward with animated feedback when ready. The Game Center supplies the shared player account and competitive standings.
